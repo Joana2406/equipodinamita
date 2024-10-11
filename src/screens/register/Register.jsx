@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebaseConfig';
 
 const Register = ({ navigation }) => {
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -11,7 +14,7 @@ const Register = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
+    if (!nombre || !apellido || !telefono || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Por favor, complete todos los campos.');
       return;
     }
@@ -37,61 +40,71 @@ const Register = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backArrow} onPress={() => navigation.goBack()}>
-          <Text style={styles.arrowText}>←</Text>
-        </TouchableOpacity>
         <Text style={styles.welcomeText}>¡Regístrate en IAC voice!</Text>
-        <Image 
-          source={{ uri: 'https://example.com/logo.png' }} // Cambia la URL de la imagen según necesites
-          style={styles.logo} 
-        />
       </View>
       <View style={styles.formContainer}>
-        <TextInput 
-          placeholder="Introduce tu correo electrónico" 
+        <TextInput
+          placeholder="Nombre"
+          style={styles.input}
+          value={nombre}
+          onChangeText={setNombre}
+        />
+        <TextInput
+          placeholder="Apellido"
+          style={styles.input}
+          value={apellido}
+          onChangeText={setApellido}
+        />
+        <TextInput
+          placeholder="Teléfono"
+          keyboardType="phone-pad"
+          style={styles.input}
+          value={telefono}
+          onChangeText={setTelefono}
+        />
+        <TextInput
+          placeholder="Correo Electrónico"
           keyboardType="email-address"
-          style={styles.input} 
+          style={styles.input}
           value={email}
           onChangeText={setEmail}
         />
         <View style={styles.passwordContainer}>
-          <TextInput 
-            placeholder="Introduce la contraseña" 
+          <TextInput
+            placeholder="Introduce la contraseña"
             secureTextEntry={!passwordVisible}
-            style={styles.input} 
+            style={styles.input}
             value={password}
             onChangeText={setPassword}
           />
-          <TouchableOpacity 
-            style={styles.togglePassword} 
+          <TouchableOpacity
+            style={styles.togglePassword}
             onPress={() => setPasswordVisible(!passwordVisible)}
           >
             <Text>👁</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.passwordContainer}>
-          <TextInput 
-            placeholder="Confirma la contraseña" 
+          <TextInput
+            placeholder="Confirma la contraseña"
             secureTextEntry={!passwordVisible}
-            style={styles.input} 
+            style={styles.input}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
           />
-          <TouchableOpacity 
-            style={styles.togglePassword} 
+          <TouchableOpacity
+            style={styles.togglePassword}
             onPress={() => setPasswordVisible(!passwordVisible)}
           >
             <Text>👁</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          style={styles.registerButton} 
-          onPress={handleRegister} 
+        <TouchableOpacity
+          style={styles.registerButton}
+          onPress={handleRegister}
           disabled={loading}
         >
-          <Text style={styles.registerButtonText}>
-            {loading ? 'Cargando...' : 'REGISTRARSE'}
-          </Text>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.registerButtonText}>REGISTRARSE</Text>}
         </TouchableOpacity>
         <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
           <Text style={styles.loginButtonText}>¿Ya tienes una cuenta? Inicia sesión</Text>
@@ -101,13 +114,12 @@ const Register = ({ navigation }) => {
   );
 };
 
-// Estilos (se mantienen igual)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0A1E1E', // Cambiar al color de fondo que estés usando en Login
   },
   header: {
     width: '100%',
@@ -118,27 +130,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     alignItems: 'center',
   },
-  backArrow: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-  },
-  arrowText: {
-    fontSize: 24,
-    color: '#000000',
-  },
   welcomeText: {
     fontSize: 18,
     fontWeight: 'bold',
     marginVertical: 20,
-  },
-  logo: {
-    width: 100,
-    height: 50,
-    marginVertical: 20,
+    color: '#273826', // Cambiar al color de texto que estés usando en Login
   },
   formContainer: {
-    backgroundColor: '#d3d3d3',
+    backgroundColor: '#273826', // Cambiar al color de fondo que estés usando en Login
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -169,7 +168,7 @@ const styles = StyleSheet.create({
   registerButton: {
     width: '100%',
     padding: 15,
-    backgroundColor: '#28a745',
+    backgroundColor: '#28a745', // Cambiar al color que estés usando en Login
     borderRadius: 30,
     alignItems: 'center',
     marginVertical: 10,
@@ -183,7 +182,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   loginButtonText: {
-    color: '#007bff',
+    color: '#007bff', // Cambiar al color que estés usando en Login
     fontSize: 14,
   },
 });

@@ -1,107 +1,60 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Keyboard, Modal } from 'react-native';
-import { signOut } from 'firebase/auth'; // Asegúrate de importar el método de cierre de sesión
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Alert } from 'react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../config/firebaseConfig'; // Asegúrate de tener la configuración de Firebase
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Importa AsyncStorage
 
-const Chat = ({ navigation }) => {
-  const [messages, setMessages] = useState([]);
-  const [inputText, setInputText] = useState('');
-  const [menuVisible, setMenuVisible] = useState(false);
+const Login = ({ navigation, setIsAuthenticated }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleSend = () => {
-    if (inputText.trim()) {
-      setMessages([...messages, { id: Date.now().toString(), text: inputText, isUser: true }]);
-      setInputText('');
-      Keyboard.dismiss();
-
-      // Simular respuesta del bot
-      setTimeout(() => {
-        setMessages(prevMessages => [
-          ...prevMessages,
-          { id: Date.now().toString(), text: 'Respuesta automática del asistente.', isUser: false },
-        ]);
-      }, 1000);
+  const handleLogin = async () => {
+    if (email.trim() === '' || password.trim() === '') {
+      Alert.alert('Error', 'Por favor, completa todos los campos.');
+      return;
     }
-  };
 
-  const handleKeyPress = (event) => {
-    if (event.nativeEvent.key === 'Enter') {
-      handleSend();
-    }
-  };
-
-  const handleLogout = async () => {
     try {
-      await signOut(auth);
-      navigation.navigate('Login'); // Redirigir a la pantalla de login después de cerrar sesión
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userToken = userCredential.user.uid; // Usar el UID del usuario como token
+      await AsyncStorage.setItem('userToken', userToken); // Guarda el token en AsyncStorage
+      console.log('Token guardado:', userToken); // Verifica que el token se guarde
+      setIsAuthenticated(true); // Cambia el estado a autenticado
+      navigation.navigate('Chat'); // Navegar a la pantalla de chat después del login exitoso
+      Keyboard.dismiss();
     } catch (error) {
-      console.error(error.message);
+      Alert.alert('Error', error.message); // Manejo de errores
     }
-  };
-
-  const renderMessage = ({ item }) => {
-    return (
-      <View style={item.isUser ? styles.userMessageContainer : styles.botMessageContainer}>
-        <Text style={styles.messageText}>{item.text}</Text>
-      </View>
-    );
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={() => setMenuVisible(!menuVisible)}>
-          <Text style={styles.menuText}>☰</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerText}>Chat con IAC Voice</Text>
-      </View>
-
-      {/* Menú desplegable */}
-      <Modal
-        visible={menuVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { 
-              handleLogout(); 
-              setMenuVisible(false);
-          }}>
-            <Text style={styles.menuItemText}>Cerrar sesión</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => {
-            // Aquí puedes navegar a la pantalla de historial de chat
-            setMenuVisible(false);
-            navigation.navigate('ChatHistory'); // Cambia esto si tienes una pantalla de historial
-          }}>
-            <Text style={styles.menuItemText}>Historial del chat</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.closeButton} onPress={() => setMenuVisible(false)}>
-            <Text style={styles.closeButtonText}>Cerrar</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        style={styles.messageList}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
-      <View style={styles.inputContainer}>
+      <View style={styles.formContainer}>
+        <Text style={styles.headerText}>Iniciar Sesión</Text>
         <TextInput
           style={styles.input}
-          placeholder="Escribe un mensaje..."
-          value={inputText}
-          onChangeText={setInputText}
-          onKeyPress={handleKeyPress}
-          returnKeyType="send"
-          onSubmitEditing={handleSend}
+          placeholder="Correo electrónico"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          onSubmitEditing={() => Keyboard.dismiss()}
+          placeholderTextColor="#A5A5A5" // Color de placeholder
         />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-          <Text style={styles.sendButtonText}>Enviar</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Contraseña"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          onSubmitEditing={handleLogin}
+          placeholderTextColor="#A5A5A5" // Color de placeholder
+        />
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
+          <Text style={styles.registerText}>¿No tienes una cuenta? Regístrate aquí.</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -111,109 +64,58 @@ const Chat = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EDEFF0', // Color de fondo
+    justifyContent: 'center',
+    alignItems: 'center', // Centra horizontalmente
+    backgroundColor: '#1E1E1E', // Fondo oscuro similar al chat
   },
-  header: {
-    backgroundColor: '#6C7476', // Color del encabezado
-    padding: 15,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    position: 'relative',
-  },
-  menuButton: {
-    position: 'absolute',
-    left: 15,
-  },
-  menuText: {
-    fontSize: 24,
-    color: '#FFFFFF', // Color del texto del menú
-  },
-  headerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF', // Color del texto del encabezado
-  },
-  messageList: {
-    flex: 1,
-    padding: 10,
-  },
-  userMessageContainer: {
-    backgroundColor: '#F99E17', // Color del mensaje del usuario
-    borderRadius: 15,
-    padding: 10,
-    marginVertical: 5,
-    alignSelf: 'flex-end',
-    maxWidth: '80%',
-  },
-  botMessageContainer: {
-    backgroundColor: '#8FADAD', // Color del mensaje del asistente
-    borderRadius: 15,
-    padding: 10,
-    marginVertical: 5,
-    alignSelf: 'flex-start',
-    maxWidth: '80%',
-    borderColor: '#6C7476',
-    borderWidth: 1,
-  },
-  messageText: {
-    color: '#000303', // Color del texto de los mensajes
-    fontSize: 16,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    padding: 10,
-    backgroundColor: '#FFFFFF', // Color de fondo del input
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#6C7476', // Color del borde del input
-    borderRadius: 30,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginRight: 10,
-    backgroundColor: '#EDEFF0', // Color de fondo del input
-  },
-  sendButton: {
-    backgroundColor: '#F99E17', // Color del botón de enviar
-    borderRadius: 30,
-    padding: 10,
-  },
-  sendButtonText: {
-    color: '#FFFFFF', // Color del texto del botón de enviar
-    fontWeight: 'bold',
-  },
-  menuContainer: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    backgroundColor: '#FFFFFF',
+  formContainer: {
+    width: '90%', // Ancho del formulario
+    maxWidth: 400, // Máximo ancho del formulario
     padding: 20,
     borderRadius: 10,
-    elevation: 5,
-    // Añadir altura mínima para el menú
-    minHeight: 100,
+    backgroundColor: '#2E2E2E', // Color gris oscuro para el fondo del formulario
+    shadowColor: '#000', // Sombra para dar efecto de elevación
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5, // Elevación en Android
   },
-  menuItem: {
-    paddingVertical: 15,
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: '#000303',
-  },
-  closeButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: '#F99E17',
+  headerText: {
+    fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#FFFFFF', // Texto en blanco para buen contraste
+  },
+  input: {
+    height: 50,
+    borderColor: '#3E3E3E', // Borde gris oscuro
+    borderWidth: 1,
+    borderRadius: 30,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    backgroundColor: '#3A3A3A', // Fondo oscuro para los inputs
+    color: '#FFFFFF', // Texto en blanco dentro de los inputs
+  },
+  loginButton: {
+    backgroundColor: '#FF6A00', // Naranja vibrante para el botón de iniciar sesión
+    borderRadius: 30,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginBottom: 10, // Espacio entre el botón y el enlace de registro
+  },
+  loginButtonText: {
+    color: '#FFFFFF', // Texto en blanco para el botón de iniciar sesión
+    fontWeight: 'bold',
+  },
+  registerLink: {
+    alignItems: 'center', // Centra el enlace
+  },
+  registerText: {
+    color: '#FF6A00', // Naranja vibrante para el texto del registro
+    textAlign: 'center',
+    marginTop: 10, // Espacio entre el botón y el texto del registro
   },
 });
 
-export default Chat;
+export default Login;

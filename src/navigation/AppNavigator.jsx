@@ -1,29 +1,64 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Importa tus pantallas
 import Home from '../screens/home/Home';
 import Login from '../screens/login/Login';
 import Register from '../screens/register/Register';
 import Chat from '../screens/chat/Chat';
+import Settings from '../screens/settings/Settings';
+import ChatHistory from '../screens/chat/ChatHistory'; // Asegúrate que este archivo exista
+import ChatDetails from '../screens/chat/ChatDetails'; // Asegúrate que este archivo exista
 
 const Stack = createStackNavigator();
 
-const ContextNavigator = () => {
+const AppNavigator = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Estado de autenticación
+
+  useEffect(() => {
+    // Función para verificar si el usuario está autenticado
+    const checkAuthentication = async () => {
+      const userToken = await AsyncStorage.getItem('userToken'); // Verifica el token guardado
+      if (userToken) {
+        setIsAuthenticated(true); // Si hay un token, el usuario está autenticado
+      } else {
+        setIsAuthenticated(false); // Si no hay token, el usuario no está autenticado
+      }
+    };
+
+    checkAuthentication();
+  }, []);
+
+  // Función para manejar el cierre de sesión
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken'); // Elimina el token al cerrar sesión
+    setIsAuthenticated(false); // Cambia el estado a no autenticado
+  };
+
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Home" // Cambia a Home como pantalla inicial
-        screenOptions={{ headerShown: false }}
+        initialRouteName={isAuthenticated ? "Chat" : "Home"} // Cambia la pantalla inicial según el estado de autenticación
+        screenOptions={{ headerShown: false }} // Oculta el encabezado
       >
         <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen 
+          name="Login" 
+          component={props => <Login {...props} setIsAuthenticated={setIsAuthenticated} />} 
+        />
         <Stack.Screen name="Register" component={Register} />
-        <Stack.Screen name="Chat" component={Chat} />
+        <Stack.Screen 
+          name="Chat" 
+          component={props => <Chat {...props} onLogout={handleLogout} />} 
+        />
+        <Stack.Screen name="Settings" component={Settings} />
+        <Stack.Screen name="ChatHistory" component={ChatHistory} />
+        <Stack.Screen name="ChatDetails" component={ChatDetails} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
 
-export default ContextNavigator;
+export default AppNavigator;
