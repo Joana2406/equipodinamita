@@ -1,39 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native';
-import { auth } from '../../config/firebaseConfig'; // Asegúrate de tener Firebase configurado
-import { updateProfile, updateEmail, updatePassword } from 'firebase/auth'; // Métodos de Firebase para actualizar perfil
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from '../../config/firebaseConfig';
+import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
 
-const Settings = ({ navigation }) => { // Asegúrate de recibir la prop navigation
+const Settings = ({ navigation }) => {
     const [name, setName] = useState(auth.currentUser.displayName || '');
     const [email, setEmail] = useState(auth.currentUser.email || '');
-    const [phone, setPhone] = useState(''); // Suponiendo que el número de teléfono se almacena en otro lugar
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
-    const [imageUri, setImageUri] = useState(null); // Lógica para cambiar la foto (puedes usar una librería para seleccionar imágenes)
+    const [imageUri, setImageUri] = useState(null);
+
+    // Cargar la imagen almacenada al montar el componente
+    useEffect(() => {
+        const loadImage = async () => {
+            const storedImageUri = await AsyncStorage.getItem('profileImage');
+            if (storedImageUri) {
+                setImageUri(storedImageUri);
+            }
+        };
+
+        loadImage();
+    }, []);
 
     const handleSaveProfile = async () => {
         try {
-            // Actualizar el nombre
             if (auth.currentUser.displayName !== name) {
                 await updateProfile(auth.currentUser, { displayName: name });
             }
-
-            // Actualizar el correo
             if (auth.currentUser.email !== email) {
                 await updateEmail(auth.currentUser, email);
             }
-
-            // Actualizar la contraseña si se proporciona
             if (password) {
                 await updatePassword(auth.currentUser, password);
             }
-
-            // Aquí puedes manejar la lógica para actualizar el número de teléfono si se necesita
-
+            // Guardar la URI de la imagen en Async Storage
+            if (imageUri) {
+                await AsyncStorage.setItem('profileImage', imageUri);
+            }
             Alert.alert("Perfil actualizado", "Tu perfil ha sido actualizado correctamente.");
-            navigation.navigate('Chat'); // Navegar de regreso a la pantalla de chat
+            navigation.navigate('Chat');
         } catch (error) {
             console.error("Error al actualizar el perfil:", error);
             Alert.alert("Error", "Hubo un problema al actualizar tu perfil.");
+        }
+    };
+
+    const handleImagePick = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.granted === false) {
+            Alert.alert("Permiso denegado", "Necesitamos permisos para acceder a tu galería.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setImageUri(result.assets[0].uri);
+        }
+    };
+
+    const handleCameraPick = async () => {
+        const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+        if (permissionResult.granted === false) {
+            Alert.alert("Permiso denegado", "Necesitamos permisos para acceder a tu cámara.");
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setImageUri(result.assets[0].uri);
         }
     };
 
@@ -47,8 +95,11 @@ const Settings = ({ navigation }) => { // Asegúrate de recibir la prop navigati
                 ) : (
                     <View style={styles.placeholderImage} />
                 )}
-                <TouchableOpacity onPress={() => { /* Lógica para seleccionar una nueva imagen */ }}>
-                    <Text style={styles.changeImageText}>Cambiar imagen</Text>
+                <TouchableOpacity onPress={handleImagePick}>
+                    <Text style={styles.changeImageText}>Seleccionar imagen de la galería</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCameraPick}>
+                    
                 </TouchableOpacity>
             </View>
 
@@ -119,6 +170,7 @@ const styles = StyleSheet.create({
     changeImageText: {
         color: '#FFFFFF',
         fontSize: 16,
+        marginVertical: 5,
     },
     input: {
         borderWidth: 1,

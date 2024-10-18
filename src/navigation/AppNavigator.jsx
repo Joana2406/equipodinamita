@@ -9,8 +9,8 @@ import Login from '../screens/login/Login';
 import Register from '../screens/register/Register';
 import Chat from '../screens/chat/Chat';
 import Settings from '../screens/settings/Settings';
-import ChatHistory from '../screens/chat/ChatHistory'; // Asegúrate que este archivo exista
-import ChatDetails from '../screens/chat/ChatDetails'; // Asegúrate que este archivo exista
+import ChatHistory from '../screens/chat/ChatHistory'; 
+import ChatDetails from '../screens/chat/ChatDetails'; 
 
 const Stack = createStackNavigator();
 
@@ -21,11 +21,7 @@ const AppNavigator = () => {
     // Función para verificar si el usuario está autenticado
     const checkAuthentication = async () => {
       const userToken = await AsyncStorage.getItem('userToken'); // Verifica el token guardado
-      if (userToken) {
-        setIsAuthenticated(true); // Si hay un token, el usuario está autenticado
-      } else {
-        setIsAuthenticated(false); // Si no hay token, el usuario no está autenticado
-      }
+      setIsAuthenticated(!!userToken); // Actualiza el estado según la existencia del token
     };
 
     checkAuthentication();
