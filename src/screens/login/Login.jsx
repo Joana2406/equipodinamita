@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Alert } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../config/firebaseConfig'; // Asegúrate de tener la configuración de Firebase
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth, googleProvider } from '../../config/firebaseConfig'; // Asegúrate de tener la configuración de Firebase
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Importa AsyncStorage
 
 const Login = ({ navigation, setIsAuthenticated }) => {
@@ -21,6 +21,21 @@ const Login = ({ navigation, setIsAuthenticated }) => {
       console.log('Token guardado:', userToken); // Verifica que el token se guarde
       setIsAuthenticated(true); // Cambia el estado a autenticado
       navigation.navigate('Chat'); // Navegar a la pantalla de chat después del login exitoso
+      Keyboard.dismiss();
+    } catch (error) {
+      Alert.alert('Error', error.message); // Manejo de errores
+    }
+  };
+
+  // Manejo del login con Google
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const userToken = result.user.uid; // Usar el UID del usuario como token
+      await AsyncStorage.setItem('userToken', userToken); // Guarda el token en AsyncStorage
+      console.log('Token de Google guardado:', userToken); // Verifica que el token se guarde
+      setIsAuthenticated(true); // Cambia el estado a autenticado
+      navigation.navigate('Chat'); // Navegar a la pantalla de chat
       Keyboard.dismiss();
     } catch (error) {
       Alert.alert('Error', error.message); // Manejo de errores
@@ -53,6 +68,12 @@ const Login = ({ navigation, setIsAuthenticated }) => {
         <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
         </TouchableOpacity>
+        
+        {/* Botón para iniciar sesión con Google */}
+        <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+          <Text style={styles.googleButtonText}>Iniciar sesión con Google</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
           <Text style={styles.registerText}>¿No tienes una cuenta? Regístrate aquí.</Text>
         </TouchableOpacity>
@@ -106,6 +127,17 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF', // Texto en blanco para el botón de iniciar sesión
+    fontWeight: 'bold',
+  },
+  googleButton: {
+    backgroundColor: '#4285F4', // Color de Google (azul)
+    borderRadius: 30,
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginBottom: 10, // Espacio entre el botón y el enlace de registro
+  },
+  googleButtonText: {
+    color: '#FFFFFF', // Texto en blanco para el botón de Google
     fontWeight: 'bold',
   },
   registerLink: {
